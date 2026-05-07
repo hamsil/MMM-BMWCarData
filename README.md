@@ -70,7 +70,7 @@ Translations are only provided for German and English (see `/translations`). Eng
 
 The minimal configuration of both modules for one vehicle is
 
-```json
+```js
 {
   module:   "MMM-BMWCarData/MMM-BMWCarDataInfo",
   position: "top_center",
@@ -89,7 +89,7 @@ The minimal configuration of both modules for one vehicle is
 }
 ```
 
-```json
+```js
 {
   module:   "MMM-BMWCarData/MMM-BMWCarDataMap",
   position: "top_center",
@@ -113,7 +113,7 @@ The configuration of my own MagicMirror² with a MINI and a BMW is almost identi
 
 Each entry is either a plain topic path **or** an object with optional `label`, `format`, and `span`:
 
-```json
+```js
 {
   topics: [
     // Plain path — label and format both auto-detected
@@ -190,7 +190,7 @@ Some values are not raw MQTT topics but are computed or fetched by the module an
 | `image` | Vehicle image from the BMW CarData REST API — fetched once and cached as `data/image-{vin}.jpg`. Rendered as a scaled image that fills the cell width (use `span` to make it wider). *Again this is the theory, in practice I always get error 403 when calling the CarData API for the image and thus a warning in the log :-(* |
 
 Examples:
-```json
+```js
 {
   topics: [
     { path: "basicdata.brand",      label: "Brand" },
@@ -212,7 +212,7 @@ The REST API calls are made **once at startup** if the cached files do not yet e
 
 Number of columns in the grid of the Info module:
 
-```json
+```js
 {
   config: {
     columns: 3,   // 1 | 2 | 3 | 4 (default) | 5 | 6
@@ -227,7 +227,7 @@ Run one Info module per VIN — each gets its own MQTT connection, `data/state-{
 
 You can run one or more Map modules that show the position and track for one or several VINs. Use `vins` to link a Map module to the VINs to display. If you do not set 'vins', the Map module shows all configured VINs.
 
-```json
+```js
 { modules :
   [
     // Vehicle 1
