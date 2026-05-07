@@ -1,0 +1,30 @@
+{
+  "name": "mmm-bmwcardata",
+  "version": "1.0.0",
+  "description": "MagicMirror² module pack for BMW CarData – info panel + live map via MQTT",
+  "license": "MIT",
+  "author": "hamsil",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/hamsil/MMM-BMWCardata"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "scripts": {
+    "postinstall": "node scripts/copy-vendor.js",
+    "login": "node tools/login.js"
+  },
+  "dependencies": {
+    "mqtt": "^5.10.1",
+    "leaflet": "^1.9.4",
+    "leaflet-hotline": "^0.4.0"
+  },
+  "keywords": [
+    "magicmirror",
+    "module",
+    "bmw",
+    "mini",
+    "cardata"
+  ]
+}

@@ -1,0 +1,7 @@
+node_modules/
+MMM-BMWCarDataInfo/data/
+MMM-BMWCarDataMap/vendor/leaflet/
+MMM-BMWCarDataMap/vendor/leaflet-hotline/
+.DS_Store
+*.log
+.claude/

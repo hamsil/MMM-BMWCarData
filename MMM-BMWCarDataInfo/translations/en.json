@@ -1,0 +1,4 @@
+{
+  "WAITING":   "Waiting for BMW CarData…",
+  "NO_TOPICS": "No topics configured — add a topics: [] list to your config"
+}

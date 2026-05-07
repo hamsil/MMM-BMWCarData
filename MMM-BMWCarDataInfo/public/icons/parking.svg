@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="32" height="32">
+  <!-- Map pin background -->
+  <path d="M16 2C10.477 2 6 6.477 6 12c0 7.5 10 18 10 18S26 19.5 26 12c0-5.523-4.477-10-10-10z" fill="#0a84ff" stroke="#0060c0" stroke-width="1"/>
+  <!-- P letter -->
+  <text x="11.5" y="18" font-family="Arial,sans-serif" font-weight="bold" font-size="13" fill="white">P</text>
+</svg>

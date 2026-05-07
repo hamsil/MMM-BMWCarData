@@ -1,0 +1,82 @@
+.bmw-info {
+  font-family: inherit;
+  color: #fff;
+}
+
+.bmw-table {
+  border-collapse: collapse;
+  width: 100%;
+}
+
+.bmw-row {
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.bmw-row:last-child {
+  border-bottom: none;
+}
+
+.bmw-label {
+  padding: 4px 14px 4px 0;
+  text-align: right;
+  white-space: nowrap;
+  opacity: 0.65;
+  font-size: 0.82em;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.bmw-value {
+  padding: 4px 0;
+  font-size: 1em;
+  font-variant-numeric: tabular-nums;
+}
+
+.bmw-waiting,
+.bmw-error {
+  opacity: 0.5;
+  font-style: italic;
+}
+
+.bmw-error {
+  color: #ff9500;
+}
+
+/* ── Two-column dynamic topic grid ─────────────────────────────────────── */
+
+.bmw-topic-table {
+  border-collapse: collapse;
+  width: 100%;
+}
+
+.bmw-topic-cell {
+  padding: 3px 10px 3px 0;
+  vertical-align: top;
+  /* width is set inline based on config.columns */
+}
+
+.bmw-topic-cell--sep {
+  padding-left: 10px;
+  border-left: 1px solid rgba(255,255,255,0.08);
+}
+
+.bmw-topic-label {
+  display: block;
+  font-size: 0.75em;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  margin-bottom: 1px;
+}
+
+.bmw-topic-value {
+  display: block;
+  font-size: 1em;
+  font-variant-numeric: tabular-nums;
+}
+
+.bmw-vehicle-image {
+  display: block;
+  width: 100%;
+  height: auto;
+  border-radius: 4px;
+}

@@ -1,0 +1,117 @@
+/* Make the MM module container block-level so width: 100% propagates correctly.
+   Without this, MM renders the module as inline-block and 100% collapses. */
+.MMM-BMWCarDataMap,
+.MMM-BMWCarDataMap .module-content {
+  display: block;
+  width: 100%;
+}
+
+.bmw-map-wrapper {
+  display: block;
+  width: 100%;
+  overflow: hidden;
+  border-radius: 6px;
+}
+
+.bmw-map-container {
+  background: #111;
+}
+
+/* Attribution: keep legally required text but make it unobtrusive */
+.bmw-map-container .leaflet-control-attribution {
+  font-size: 9px;
+  line-height: 1.2;
+  opacity: 0.45;
+  background: rgba(0, 0, 0, 0.35) !important;
+  color: #ccc !important;
+  padding: 1px 4px !important;
+  border-radius: 3px 0 0 0;
+}
+
+.bmw-map-container .leaflet-control-attribution a {
+  color: #bbb !important;
+}
+
+/* Current-position arrow — dark fill + white halo so it reads on any tile style */
+.bmw-arrow {
+  font-size: 22px;
+  color: #1a1a2e;
+  text-shadow:
+    0 0 2px #fff, 0 0 4px #fff,
+    1px 1px 0 #fff, -1px -1px 0 #fff,
+    1px -1px 0 #fff, -1px 1px 0 #fff;
+  line-height: 24px;
+  text-align: center;
+  transform-origin: center center;
+}
+
+/* Stop markers shared base */
+.bmw-stop-icon {
+  border-radius: 50% 50% 50% 0;
+  transform: rotate(-45deg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+  font-size: 14px;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.6);
+}
+
+.bmw-charging-icon {
+  background: #34c759;
+  color: #111;   /* dark on bright green — contrast 9.5:1, passes WCAG AAA */
+  border-radius: 50% 50% 50% 0;
+  transform: rotate(-45deg);
+  width: 28px !important;
+  height: 28px !important;
+}
+
+.bmw-charging-icon > * {
+  transform: rotate(45deg);
+}
+
+.bmw-parking-icon {
+  background: #0055b3;  /* darker blue — white contrast 6.4:1, passes WCAG AA */
+  color: #fff;
+  border-radius: 50% 50% 50% 0;
+  transform: rotate(-45deg);
+  width: 24px !important;
+  height: 24px !important;
+  font-family: Arial, sans-serif;
+}
+
+.bmw-parking-icon > * {
+  transform: rotate(45deg);
+}
+
+/* Popup overrides for dark mirror theme */
+.bmw-popup .leaflet-popup-content-wrapper {
+  background: rgba(20, 20, 20, 0.92);
+  color: #e8e8e8;
+  border: 1px solid rgba(255,255,255,0.15);
+  border-radius: 8px;
+  font-size: 13px;
+  line-height: 1.6;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.6);
+}
+
+.bmw-popup .leaflet-popup-tip {
+  background: rgba(20, 20, 20, 0.92);
+}
+
+.bmw-popup .leaflet-popup-close-button {
+  color: #aaa;
+}
+
+.bmw-popup-addr {
+  font-size: 0.85em;
+  opacity: 0.7;
+  margin-bottom: 2px;
+}
+
+.bmw-popup-charging b,
+.bmw-popup-parking b {
+  display: block;
+  margin-bottom: 4px;
+  font-size: 1em;
+}
