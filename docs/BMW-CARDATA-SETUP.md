@@ -142,12 +142,8 @@ Your `refresh_token` may have expired (this happens if MagicMirror was offline f
 
 ### Map shows no track
 
-- The car needs to have been driven since the module started (or since `data/state.json` was last written).
-- Run `node tools/probe.js` to verify signals are arriving. If the output shows empty `data:` objects, revisit Step 3 and enable the location descriptors in the BMW portal.
-
-### `vehicle.location.coordinates` not arriving
-
-This descriptor must be explicitly enabled in the BMW portal. See Step 3. Some older BMW models do not expose live GPS via CarData.
+- The car needs to have been driven since the module started (or since `data/state-{vin}.json` was last written).
+- Try injecting the demo track. See the [README](../README.md#testing-the-map-without-driving).
 
 ### Vehicle image or capabilities return 403
 
@@ -177,6 +173,7 @@ Make sure Node.js was installed via NodeSource, not the very old version in the 
 
 - Verify your `id_token` hasn't expired (tokens rotate hourly; the module refreshes automatically when running).
 - Check that `customer.streaming-cardata.bmwgroup.com` is reachable: `ping customer.streaming-cardata.bmwgroup.com`.
+- If you get errors like `quota exceeded` another client is already accessing the stream. BMW only allows one concurrent client.
 
 ---
 
@@ -197,4 +194,4 @@ Then restart MagicMirror.
 
 - The MQTT stream is end-to-end TLS encrypted between BMW's broker and your device.
 - No data leaves your home network except for the optional Nominatim reverse-geocoding requests (which send only GPS coordinates to OpenStreetMap's servers).
-- `tokens.json` is created with mode `0600` and is excluded from git. Never commit it.
+- `data/tokens-{clientId}.json` is created with mode `0600` and is excluded from git. Never commit it.
