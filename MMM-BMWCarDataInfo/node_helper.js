@@ -301,8 +301,8 @@ module.exports = NodeHelper.create({
 
     const rawLat = patchCoords?.lat ?? patch.lat ?? null;
     const rawLon = patchCoords?.lon ?? patch.lon ?? null;
-    const latTs  = patch.coordinatesAt ?? patch.latAt  ?? (rawLat === null ? null : Date.now());
-    const lonTs  = patch.coordinatesAt ?? patch.lonAt  ?? (rawLon === null ? null : Date.now());
+    const latTs  = _tsMs(patch.coordinatesAt ?? patch.latAt)  ?? (rawLat === null ? null : Date.now());
+    const lonTs  = _tsMs(patch.coordinatesAt ?? patch.lonAt)  ?? (rawLon === null ? null : Date.now());
 
     // Clear coordinates from patch — they will only be set back if a matched
     // lat+lon pair is found (directly or via the buffer).
@@ -767,6 +767,15 @@ module.exports = NodeHelper.create({
 });
 
 // ── Shared helpers (used in both socketNotificationReceived and HTTP handler) ─
+
+// Normalise a timestamp to milliseconds.  BMW sends GPS timestamps as ISO-8601
+// strings ("2026-05-08T12:49:55Z"); other sources may already be numeric ms.
+function _tsMs(v) {
+  if (v == null)             return null;
+  if (typeof v === "number") return v;
+  const ms = Date.parse(String(v));
+  return Number.isNaN(ms) ? null : ms;
+}
 
 // Return the key in `map` whose numeric value is closest to `ts` and within
 // `toleranceMs`, or null if no such entry exists.
