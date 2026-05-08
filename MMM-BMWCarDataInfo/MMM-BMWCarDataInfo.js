@@ -1,4 +1,3 @@
-/* global Module, Log */
 "use strict";
 
 // VIN format: 17 chars, no I/O/Q per ISO 3779.

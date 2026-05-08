@@ -1,4 +1,3 @@
-/* global Module, Log, L */
 "use strict";
 
 // Catmull-Rom spline: given sorted array of {lat,lon} points, returns a denser

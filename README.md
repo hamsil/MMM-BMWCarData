@@ -36,14 +36,23 @@ A [MagicMirror²](https://magicmirror.builders/) module pack that connects to th
 
 ## Installation
 
+Clone this repository in your modules folder, and install dependencies:
+
 ```bash
 cd ~/MagicMirror/modules
-git clone https://github.com/hamsil/MMM-BMWCardata.git
-cd MMM-BMWCardata
+git clone https://github.com/hamsil/MMM-BMWCarData.git
+cd MMM-BMWCarData
 npm install
 ```
 
 `npm install` automatically copies Leaflet assets into `MMM-BMWCarDataMap/vendor/`.
+
+## Update
+
+```bash
+cd ~/MagicMirror/modules/MMM-BMWCarData
+git pull
+```
 
 ## First-time BMW/MINI setup
 
