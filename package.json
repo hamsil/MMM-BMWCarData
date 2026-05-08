@@ -19,7 +19,7 @@
   "devDependencies": {
     "@eslint/js": "^10.0.1",
     "eslint":     "^9.0.0",
-    "globals":    "^15.0.0"
+    "globals":    "^17.6.0"
   },
   "dependencies": {
     "mqtt": "^5.10.1",
