@@ -120,6 +120,7 @@ module.exports = NodeHelper.create({
   async _initCar(car) {
     const cfg = car.config;
     car.store.load();
+    this._pruneCoordLog(car);
 
     const geoEnabled = cfg.geocoder?.enabled ?? true;
     const geoContact = cfg.geocoder?.contact ?? "";
@@ -307,6 +308,10 @@ module.exports = NodeHelper.create({
     // lat+lon pair is found (directly or via the buffer).
     delete patch.lat;
     delete patch.lon;
+
+    const wallMs = Date.now();
+    if (rawLat !== null) this._appendCoordLog(car, "lat", wallMs, latTs, rawLat);
+    if (rawLon !== null) this._appendCoordLog(car, "lon", wallMs, lonTs, rawLon);
 
     if (rawLat !== null) car.coordBuffer.lats.set(latTs, rawLat);
     if (rawLon !== null) car.coordBuffer.lons.set(lonTs, rawLon);
@@ -688,6 +693,44 @@ module.exports = NodeHelper.create({
         res.status(500).end();
       }
     });
+  },
+
+  // ── Coordinate log ────────────────────────────────────────────────────────
+  // Appends every raw lat/lon as it arrives from MQTT to a plain-text file in
+  // data/locations-{vin}.log. Format per line:
+  //   {wallMs} {field} {gpsTsMs} {value}
+  // wallMs   = Date.now() when the message was processed
+  // field    = "lat" or "lon"
+  // gpsTsMs  = GPS timestamp from BMW (or wallMs if BMW did not provide one)
+  // value    = raw coordinate value
+
+  _appendCoordLog(car, field, wallMs, gpsTsMs, value) {
+    const ts = gpsTsMs ?? wallMs;
+    try {
+      fs.appendFileSync(
+        path.join(DATA_DIR, `locations-${car.vin}.log`),
+        `${wallMs} ${field} ${ts} ${value}\n`,
+      );
+    } catch { /* non-critical debug log */ }
+  },
+
+  // Prune log entries older than 24 h on startup so the file stays bounded.
+  _pruneCoordLog(car) {
+    const logFile = path.join(DATA_DIR, `locations-${car.vin}.log`);
+    const cutoff  = Date.now() - (car.config.trackHours ?? 24) * 60 * 60 * 1000;
+    try {
+      const lines = fs.readFileSync(logFile, "utf8").split("\n").filter(Boolean);
+      const kept  = lines.filter((l) => {
+        const wallMs = Number(l.split(" ")[0]);
+        return Number.isFinite(wallMs) && wallMs >= cutoff;
+      });
+      if (kept.length < lines.length) {
+        fs.writeFileSync(logFile, kept.length > 0 ? `${kept.join("\n")}\n` : "");
+        console.log(`[BMW ${car.vin}] Pruned coord log: ${lines.length - kept.length} old entries removed.`);
+      }
+    } catch (e) {
+      if (e.code !== "ENOENT") console.warn(`[BMW ${car.vin}] Could not prune coord log:`, e.message);
+    }
   },
 
   // ── Tile proxy ─────────────────────────────────────────────────────────────

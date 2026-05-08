@@ -179,11 +179,12 @@ When the auto-detected format is wrong (e.g. your car sends pressure in a differ
 
 #### Topic Discovery
 
-Three files in `data/` help you understand what your car provides:
+Several files in `data/` help you understand what your car provides:
 
 | File | When created | What it contains |
 |---|---|---|
 | `discovered-topics-{vin}.json` | Grows at runtime | Every MQTT descriptor path your car has ever sent — last value, type, timestamp, and receive count. The live source for your `topics:` list. |
+| `locations-{vin}.log` | Grows at runtime | Every raw GPS coordinate received from MQTT, one per line: `wallMs field gpsTsMs value`. Useful for debugging the GPS track. Pruned to 24 h on restart. |
 | `basic-data-{vin}.json` | Once at startup | Static vehicle metadata from the BMW CarData REST API (brand, model, model year, colour, …). Attributes become `basicdata.<attr>` topics. |
 | `capabilities-{vin}.json` | Once at startup | Vehicle capability flags from the BMW CarData REST API — which features the car supports. Stored for reference; not used by the module itself. *Well, that's the theory, in practice I always get error 403 when calling the CarData API for capabilities and thus a warning in the log :-(* |
 
@@ -266,6 +267,7 @@ Run `node tools/login.js` **once per BMW account** — tokens are per account, n
 | `vin` | `""` | **Required.** Vehicle VIN |
 | `topics` | `null` | **Highly recommended.** Array of topic paths to display. Each entry: plain path string, or `{ path, label?, format?, span? }` (see above). If omitted the module shows a "No topics configured" message. |
 | `columns` | `4` | Number of display columns (1–6) |
+| `trackHours` | `24` | Hours of GPS data to retain. Controls the `locations-{vin}.log` retention window. Set to a larger of equal value as `trackHours` in `MMM-BMWCarDataMap`. |
 | `parkingMinMinutes` | `10` | Min stationary minutes to register a parking stop |
 | `mqttHost` | `customer.streaming-cardata.bmwgroup.com` |  MQTT host (from portal streaming credentials) |
 | `mqttPort` | `9000` |  MQTT port (from portal streaming credentials) |
