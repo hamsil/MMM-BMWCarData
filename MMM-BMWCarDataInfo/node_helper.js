@@ -19,11 +19,6 @@ const DATA_DIR       = path.join(__dirname, "data");
 const BMW_API_HOST   = "api-cardata.bmwgroup.com";
 const BMW_API_PREFIX = "/customers/vehicles";
 
-// Round a millisecond timestamp to a 3-second bucket for coordinate matching.
-// Lat and lon for the same GPS fix usually share identical timestamps, but a
-// 3-second window handles sub-second jitter from the BMW MQTT stream.
-function _coordKey(ms) { return Math.floor(ms / 3000); }
-
 // VIN format: 17 chars, no I/O/Q per ISO 3779.
 // Intentionally duplicated from MMM-BMWCarDataInfo.js — the two files run in
 // different environments (Node vs browser) so they cannot share a module.
@@ -46,7 +41,7 @@ function makeCar(vin) {
     pruneTimer:  null,   // interval that prunes the coord buffer
     instances:   new Set(),  // instanceIds listening to this car
     // Buffers for coordinates that arrive in separate MQTT messages (lat burst
-    // then lon burst).  Keyed by _coordKey(timestamp); pruned on a timer.
+    // then lon burst).  Keyed by exact GPS timestamp (ms); pruned on a timer.
     coordBuffer: { lats: new Map(), lons: new Map() },
   };
 }
@@ -178,7 +173,7 @@ module.exports = NodeHelper.create({
 
     // Prune the coordinate match-buffer on a timer instead of on every message.
     car.pruneTimer = setInterval(() => {
-      const cutoff = _coordKey(Date.now() - TIMINGS.COORD_BUFFER_MAX_AGE_MS);
+      const cutoff = Date.now() - TIMINGS.COORD_BUFFER_MAX_AGE_MS;
       for (const k of car.coordBuffer.lats.keys()) if (k < cutoff) car.coordBuffer.lats.delete(k);
       for (const k of car.coordBuffer.lons.keys()) if (k < cutoff) car.coordBuffer.lons.delete(k);
     }, TIMINGS.COORD_BUFFER_PRUNE_INTERVAL_MS);
@@ -313,22 +308,28 @@ module.exports = NodeHelper.create({
     delete patch.lat;
     delete patch.lon;
 
-    if (rawLat !== null) car.coordBuffer.lats.set(_coordKey(latTs), rawLat);
-    if (rawLon !== null) car.coordBuffer.lons.set(_coordKey(lonTs), rawLon);
+    if (rawLat !== null) car.coordBuffer.lats.set(latTs, rawLat);
+    if (rawLon !== null) car.coordBuffer.lons.set(lonTs, rawLon);
 
-    // Try to find a matched pair using the key of the newly arrived coordinate.
-    let matchKey = null;
-    if (rawLon !== null)      matchKey = _coordKey(lonTs);
-    else if (rawLat !== null) matchKey = _coordKey(latTs);
+    // Use the most recently arrived coordinate as the trigger; search the
+    // opposite buffer for the nearest timestamp within the tolerance window.
+    // This prevents the "stranded + wrong-bucket match" bug: at high speeds a
+    // 3-second bucket would allow matching a lat from one GPS fix with a lon
+    // from a fix ~3 s (and ~160 m) later.  With exact timestamps and a 500 ms
+    // window that error is ≤ 28 m at 200 km/h.
+    const triggerTs = lonTs ?? latTs;
+    if (triggerTs === null) return;
 
-    if (matchKey !== null
-        && car.coordBuffer.lats.has(matchKey)
-        && car.coordBuffer.lons.has(matchKey)) {
-      const lat = car.coordBuffer.lats.get(matchKey);
-      const lon = car.coordBuffer.lons.get(matchKey);
-      car.coordBuffer.lats.delete(matchKey);
-      car.coordBuffer.lons.delete(matchKey);
-      this._applyCoordPair(car, patch, lat, lon, matchKey * 3000);
+    const tol    = TIMINGS.COORD_MATCH_TOLERANCE_MS;
+    const latKey = rawLon === null ? latTs : _findNearest(car.coordBuffer.lats, triggerTs, tol);
+    const lonKey = rawLon === null ? _findNearest(car.coordBuffer.lons, triggerTs, tol) : lonTs;
+
+    if (latKey !== null && lonKey !== null) {
+      const lat = car.coordBuffer.lats.get(latKey);
+      const lon = car.coordBuffer.lons.get(lonKey);
+      car.coordBuffer.lats.delete(latKey);
+      car.coordBuffer.lons.delete(lonKey);
+      this._applyCoordPair(car, patch, lat, lon, Math.round((latKey + lonKey) / 2));
     }
     // Buffer pruning is handled by car.pruneTimer (set in _initCar).
   },
@@ -723,6 +724,18 @@ module.exports = NodeHelper.create({
 });
 
 // ── Shared helpers (used in both socketNotificationReceived and HTTP handler) ─
+
+// Return the key in `map` whose numeric value is closest to `ts` and within
+// `toleranceMs`, or null if no such entry exists.
+function _findNearest(map, ts, toleranceMs) {
+  let bestKey  = null;
+  let bestDiff = Infinity;
+  for (const k of map.keys()) {
+    const diff = Math.abs(k - ts);
+    if (diff <= toleranceMs && diff < bestDiff) { bestDiff = diff; bestKey = k; }
+  }
+  return bestKey;
+}
 
 // Assign absolute timestamps to track points that carry dt offsets instead of t.
 // The trip ends at now; dt=0 on the first point, subsequent points store elapsed

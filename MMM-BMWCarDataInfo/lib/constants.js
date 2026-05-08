@@ -7,6 +7,7 @@ const TIMINGS = {
   TOKEN_REFRESH_RETRY_DELAY_MS:   2 * 60_000,  // retry delay after a failed refresh
   COORD_BUFFER_PRUNE_INTERVAL_MS: 10_000,       // how often to prune the coord buffer
   COORD_BUFFER_MAX_AGE_MS:        30_000,       // discard coord entries older than this
+  COORD_MATCH_TOLERANCE_MS:          500,       // max ms between lat/lon timestamps to accept as a pair
   MQTT_RETRY_INITIAL_MS:          5_000,
   MQTT_RETRY_MAX_MS:              5 * 60_000,
 };
