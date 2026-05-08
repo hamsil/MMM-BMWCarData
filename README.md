@@ -153,12 +153,13 @@ The module infers format from the path — no formatter needed per topic:
 | `speed` | km/h |
 | `Range`, `Distance`, `Mileage`, `travelledDistance` | km |
 | `stateOfCharge`, `header`, `hvSoc` | % |
-| `chargingPower`, `power` | kW |
+| `charging.power` | kW |
 | `maxEnergy` | kWh |
 | `consumption`, `recuperation` | kWh/100 km |
 | `litres`, `liters` | l |
 | `isXxx`, `locked`, `plugged`, `moving` | Yes / No |
-| `status`, `state` | Title-cased enum (e.g. `CHARGINGACTIVE` → "Charging Active") |
+| `charging.status` | Charging state with "CHARGING" removed, title-cased — e.g. `CHARGINGACTIVE` → "Active", `NOCHARGING` → "No", `INITIALIZATION` → "Initialization" |
+| `status`, `state` | Title-cased enum — works best for `UNDERSCORE_SEPARATED` values |
 | Timestamp strings | Local date + time |
 
 #### Format Override

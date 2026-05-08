@@ -37,9 +37,8 @@ const RULES = [
   { test: /[Mm]ax[Ee]nergy/,                                          format: "{v:.1f} kWh" },
   { test: /[Cc]onsumption/,                                           format: "{v:.1f} kWh/100km" },
   { test: /[Rr]ecuperation/,                                          format: "{v:.1f} kWh/100km" },
-  { test: /[Cc]harging[Pp]ower/,                                      format: "{v:.1f} kW" },
-  { test: /[Pp]ower/,                                                 format: "{v:.1f} kW" },
-
+  { test: /[Cc]harging.[Pp]ower/,                                      format: "{v/1000:.0f} kW" },
+  
   // State of charge / battery level (%, must come before generic "range")
   { test: /[Ss]tate[Oo]f[Cc]harge|header$|hvSoc|[Bb]attery[Ll]evel/, format: "{v:.0f} %" },
   { test: /(?:[Ff]uel[Ll]evel.*[Pp]ercentage|fuelLevel$)/,            format: "{v:.0f} %" },
@@ -56,8 +55,13 @@ const RULES = [
   // Timestamps / time
   { test: /[Tt]ime$|[Ee]nd\.[Tt]ime|[Ss]tart[Tt]ime/,       fmt: "timestamp" },
 
+  // Charging status: strip the word "CHARGING" (BMW embeds it in every value),
+  // replace underscores with spaces, title-case the remainder.
+  // e.g. CHARGINGACTIVE → "Active", NOCHARGING → "No", INITIALIZATION → "Initialization"
+  { test: /[Cc]harging\.[Ss]tatus/,                                    fmt: "chargingStatus" },
+
   // Enum / status strings – UPPERCASE_WITH_UNDERSCORES → Title Case
-  { test: /[Ss]tatus$|[Ss]tate$|[Cc]harging\.[Ss]tatus|[Pp]ort[Ss]tatus/, fmt: "enum" },
+  { test: /[Ss]tatus$|[Ss]tate$|[Pp]ort[Ss]tatus/,                    fmt: "enum" },
 ];
 
 // Recursive-descent arithmetic evaluator for format expressions.
@@ -169,9 +173,10 @@ function formatValue(topicPath, value, locale = "en-US", overrides = null) {
 }
 
 function applyRule(rule, rawValue, locale) {
-  if (rule.fmt === "boolean")   return formatBoolean(rawValue);
-  if (rule.fmt === "timestamp") return formatTimestamp(rawValue, locale);
-  if (rule.fmt === "enum")      return formatEnum(rawValue);
+  if (rule.fmt === "boolean")        return formatBoolean(rawValue);
+  if (rule.fmt === "timestamp")      return formatTimestamp(rawValue, locale);
+  if (rule.fmt === "chargingStatus") return formatChargingStatus(rawValue);
+  if (rule.fmt === "enum")           return formatEnum(rawValue);
   return applyFormat(rule.format, rawValue);
 }
 
@@ -200,6 +205,16 @@ function autoFormat(value, locale) {
 function formatBoolean(v) {
   const b = v === true || v === "true" || v === 1 || v === "1";
   return b ? "Yes" : "No";
+}
+
+function formatChargingStatus(v) {
+  const cleaned = String(v)
+    .replaceAll("CHARGING", "")   // remove prefix AND postfix: CHARGINGACTIVE→ACTIVE, NOCHARGING→NO
+    .replaceAll("_", " ")
+    .trim()
+    .replaceAll(/\s+/g, " ");
+  const display = cleaned || "Charging";   // "CHARGING" alone maps back to "Charging"
+  return display.toLowerCase().replaceAll(/\b\w/g, (c) => c.toUpperCase());
 }
 
 function formatEnum(v) {
