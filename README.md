@@ -52,6 +52,7 @@ npm install
 ```bash
 cd ~/MagicMirror/modules/MMM-BMWCarData
 git pull
+npm install
 ```
 
 ## First-time BMW/MINI setup
