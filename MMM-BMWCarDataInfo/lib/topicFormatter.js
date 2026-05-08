@@ -55,12 +55,10 @@ const RULES = [
   // Timestamps / time
   { test: /[Tt]ime$|[Ee]nd\.[Tt]ime|[Ss]tart[Tt]ime/,       fmt: "timestamp" },
 
-  // Charging status: strip the word "CHARGING" (BMW embeds it in every value),
-  // replace underscores with spaces, title-case the remainder.
-  // e.g. CHARGINGACTIVE → "Active", NOCHARGING → "No", INITIALIZATION → "Initialization"
-  { test: /[Cc]harging\.[Ss]tatus/,                                    fmt: "chargingStatus" },
-
-  // Enum / status strings – UPPERCASE_WITH_UNDERSCORES → Title Case
+  // Charging status and other enum/status fields:
+  // looked up as  topic.<full-path>.<VALUE>  in the active translation file (en fallback).
+  // Raw enum value is shown unchanged when no translation is found.
+  { test: /[Cc]harging\.[Ss]tatus/,                                    fmt: "enum" },
   { test: /[Ss]tatus$|[Ss]tate$|[Pp]ort[Ss]tatus/,                    fmt: "enum" },
 ];
 
@@ -155,7 +153,7 @@ const _ruleCache = new Map();
  * @param {object} [overrides] Optional per-topic override: { format: "{v/100:.1f} bar" }
  * @returns {string}          Human-readable string
  */
-function formatValue(topicPath, value, locale = "en-US", overrides = null) {
+function formatValue(topicPath, value, locale = "en-US", overrides = null, translate = null) {
   if (value === null || value === undefined) return "—";
 
   if (overrides?.format != null) return applyFormat(overrides.format, value);
@@ -168,15 +166,21 @@ function formatValue(topicPath, value, locale = "en-US", overrides = null) {
     _ruleCache.set(topicPath, rule);
   }
 
-  if (rule) return applyRule(rule, value, locale);
+  if (rule) return applyRule(rule, value, locale, translate, topicPath);
   return autoFormat(value, locale);
 }
 
-function applyRule(rule, rawValue, locale) {
-  if (rule.fmt === "boolean")        return formatBoolean(rawValue);
-  if (rule.fmt === "timestamp")      return formatTimestamp(rawValue, locale);
-  if (rule.fmt === "chargingStatus") return formatChargingStatus(rawValue);
-  if (rule.fmt === "enum")           return formatEnum(rawValue);
+function applyRule(rule, rawValue, locale, translate, topicPath) {
+  if (rule.fmt === "boolean")   return formatBoolean(rawValue);
+  if (rule.fmt === "timestamp") return formatTimestamp(rawValue, locale);
+  if (rule.fmt === "enum") {
+    if (translate) {
+      const key = `topic.${topicPath}.${String(rawValue)}`;
+      const t = translate(key);
+      if (t !== key) return t;
+    }
+    return String(rawValue);
+  }
   return applyFormat(rule.format, rawValue);
 }
 
@@ -193,8 +197,6 @@ function autoFormat(value, locale) {
   if (typeof value === "string") {
     // ISO timestamp?
     if (/^\d{4}-\d{2}-\d{2}T/.test(value)) return formatTimestamp(value, locale);
-    // ALL_CAPS enum?
-    if (/^[A-Z][A-Z0-9_]+$/.test(value)) return formatEnum(value);
     return value;
   }
 
@@ -205,25 +207,6 @@ function autoFormat(value, locale) {
 function formatBoolean(v) {
   const b = v === true || v === "true" || v === 1 || v === "1";
   return b ? "Yes" : "No";
-}
-
-function formatChargingStatus(v) {
-  const cleaned = String(v)
-    .replaceAll("CHARGING", "")   // remove prefix AND postfix: CHARGINGACTIVE→ACTIVE, NOCHARGING→NO
-    .replaceAll("_", " ")
-    .trim()
-    .replaceAll(/\s+/g, " ");
-  const display = cleaned || "Charging";   // "CHARGING" alone maps back to "Charging"
-  return display.toLowerCase().replaceAll(/\b\w/g, (c) => c.toUpperCase());
-}
-
-function formatEnum(v) {
-  // CHARGINGACTIVE → "Charging Active",  NOCHARGING → "No Charging"
-  return String(v)
-    .replaceAll("_", " ")
-    .replaceAll(/([a-z])([A-Z])/g, "$1 $2")
-    .toLowerCase()
-    .replaceAll(/\b\w/g, (c) => c.toUpperCase());
 }
 
 function formatTimestamp(v, locale) {

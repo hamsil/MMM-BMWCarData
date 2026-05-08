@@ -158,8 +158,7 @@ The module infers format from the path — no formatter needed per topic:
 | `consumption`, `recuperation` | kWh/100 km |
 | `litres`, `liters` | l |
 | `isXxx`, `locked`, `plugged`, `moving` | Yes / No |
-| `charging.status` | Charging state with "CHARGING" removed, title-cased — e.g. `CHARGINGACTIVE` → "Active", `NOCHARGING` → "No", `INITIALIZATION` → "Initialization" |
-| `status`, `state` | Title-cased enum — works best for `UNDERSCORE_SEPARATED` values |
+| `charging.status`, `portStatus`, `status`, `state` | Translation lookup via key `topic.<full-path>.<VALUE>` in the active locale (falls back to English, then raw value). See `MMM-BMWCarDataInfo/translations` |
 | Timestamp strings | Local date + time |
 
 #### Format Override

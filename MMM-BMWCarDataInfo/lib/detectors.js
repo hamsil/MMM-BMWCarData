@@ -11,17 +11,14 @@ function haversine(a, b) {
   return 2 * R * Math.asin(Math.sqrt(x));
 }
 
-// Charging status values that mean a session is open (MINI values listed first)
+// Charging status values that mean a session is open
 const CHARGING_STATES = new Set([
   "CHARGINGACTIVE", "INITIALIZATION", "CHARGINGPAUSED",
-  "CHARGING", "CHARGING_ACTIVE", "CHARGE_NOW", "IMMEDIATE_CHARGING",
-  "PENDING_FOR_CHARGING", "WAITING_FOR_CHARGING",
 ]);
 
 // Status values that definitively end a charging session
 const CHARGING_ENDED_STATES = new Set([
   "NOCHARGING", "CHARGINGENDED", "CHARGINGERROR",
-  "NOT_CHARGING", "ERROR",
 ]);
 
 class StopDetectors {

@@ -222,7 +222,7 @@ Module.register("MMM-BMWCarDataInfo", {
     const overrides    = format ? { format } : null;
     const displayValue = rawValue == null
       ? "—"
-      : formatValue(path, rawValue, this.config.locale, overrides);
+      : formatValue(path, rawValue, this.config.locale, overrides, (key) => this.translate(key));
 
     const labelEl = document.createElement("span");
     labelEl.className = "bmw-topic-label dimmed small";
