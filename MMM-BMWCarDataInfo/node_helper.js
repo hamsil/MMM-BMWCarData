@@ -5,14 +5,14 @@ const crypto     = require("node:crypto");
 const https      = require("node:https");
 const fs         = require("node:fs");
 const path       = require("node:path");
-const { loadTokens, saveTokens }    = require("./lib/auth");
+const { loadTokens }                = require("./lib/auth");
 const { BMWMqttClient }             = require("./lib/mqttClient");
 const { Store }                     = require("./lib/store");
 const { KalmanSmoother }            = require("./lib/smoother");
 const { StopDetectors }             = require("./lib/detectors");
 const { parsePayload }              = require("./lib/descriptors");
 const { Geocoder }                  = require("./lib/geocoder");
-const { TokenManager, _jwtRemainingSeconds } = require("./lib/tokenManager");
+const { TokenManager }              = require("./lib/tokenManager");
 const { TIMINGS, SOCKET_NOTIF }     = require("./lib/constants");
 
 const DATA_DIR       = path.join(__dirname, "data");
