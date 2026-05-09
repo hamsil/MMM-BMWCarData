@@ -39,6 +39,7 @@ function makeCar(vin) {
     tokenState:  null,   // shared { tokens, clientId } for this car's account
     tokenMgr:    null,   // shared TokenManager for this car's account
     pruneTimer:  null,   // interval that prunes the coord buffer
+    logDate:     null,   // local date string of last locations-log write (midnight-rollover detection)
     instances:   new Set(),  // instanceIds listening to this car
     // Buffers for coordinates that arrive in separate MQTT messages (lat burst
     // then lon burst).  Keyed by exact GPS timestamp (ms); pruned on a timer.
@@ -120,7 +121,7 @@ module.exports = NodeHelper.create({
   async _initCar(car) {
     const cfg = car.config;
     car.store.load();
-    this._pruneCoordLog(car);
+    this._initCoordLog(car);
 
     const geoEnabled = cfg.geocoder?.enabled ?? true;
     const geoContact = cfg.geocoder?.contact ?? "";
@@ -705,31 +706,34 @@ module.exports = NodeHelper.create({
   // value    = raw coordinate value
 
   _appendCoordLog(car, field, wallMs, gpsTsMs, value) {
-    const ts = gpsTsMs ?? wallMs;
+    if (!car.config.debugLocations) return;
+    const logFile = path.join(DATA_DIR, `locations-${car.vin}.log`);
+    const today   = _localDayKey();
+    if (car.logDate !== null && car.logDate !== today) {
+      try { fs.unlinkSync(logFile); } catch { /* ok if already gone */ }
+      console.log(`[BMW ${car.vin}] Coord log deleted at midnight rollover.`);
+    }
+    car.logDate = today;
     try {
-      fs.appendFileSync(
-        path.join(DATA_DIR, `locations-${car.vin}.log`),
-        `${wallMs} ${field} ${ts} ${value}\n`,
-      );
+      fs.appendFileSync(logFile, `${wallMs} ${field} ${gpsTsMs ?? wallMs} ${value}\n`);
     } catch { /* non-critical debug log */ }
   },
 
-  // Prune log entries older than 24 h on startup so the file stays bounded.
-  _pruneCoordLog(car) {
+  // On startup: delete a leftover log from a previous day so each day starts clean.
+  _initCoordLog(car) {
+    if (!car.config.debugLocations) return;
     const logFile = path.join(DATA_DIR, `locations-${car.vin}.log`);
-    const cutoff  = Date.now() - (car.config.trackHours ?? 24) * 60 * 60 * 1000;
+    const today   = _localDayKey();
     try {
-      const lines = fs.readFileSync(logFile, "utf8").split("\n").filter(Boolean);
-      const kept  = lines.filter((l) => {
-        const wallMs = Number(l.split(" ")[0]);
-        return Number.isFinite(wallMs) && wallMs >= cutoff;
-      });
-      if (kept.length < lines.length) {
-        fs.writeFileSync(logFile, kept.length > 0 ? `${kept.join("\n")}\n` : "");
-        console.log(`[BMW ${car.vin}] Pruned coord log: ${lines.length - kept.length} old entries removed.`);
+      const fileDay = _localDayKey(new Date(fs.statSync(logFile).mtime));
+      if (fileDay === today) {
+        car.logDate = today;
+      } else {
+        fs.unlinkSync(logFile);
+        console.log(`[BMW ${car.vin}] Coord log from ${fileDay} deleted on startup.`);
       }
     } catch (e) {
-      if (e.code !== "ENOENT") console.warn(`[BMW ${car.vin}] Could not prune coord log:`, e.message);
+      if (e.code !== "ENOENT") console.warn(`[BMW ${car.vin}] Could not check coord log:`, e.message);
     }
   },
 
@@ -767,6 +771,12 @@ module.exports = NodeHelper.create({
 });
 
 // ── Shared helpers (used in both socketNotificationReceived and HTTP handler) ─
+
+// Return a locale-independent "YYYY-M-D" key for the local calendar day of `d`.
+// Used to detect midnight rollovers without depending on toLocaleDateString locale.
+function _localDayKey(d = new Date()) {
+  return `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;
+}
 
 // Normalise a timestamp to milliseconds.  BMW sends GPS timestamps as ISO-8601
 // strings ("2026-05-08T12:49:55Z"); other sources may already be numeric ms.

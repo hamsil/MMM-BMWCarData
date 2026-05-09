@@ -10,7 +10,7 @@ Module.register("MMM-BMWCarDataInfo", {
     clientId:          "",
     vin:               "",
     columns:           4,         // columns in the topic grid (1–6)
-    trackHours:        24,        // hours of GPS data to retain (matches MMM-BMWCarDataMap default)
+    debugLocations:    false,     // set true to write data/locations-{vin}.log (GPS debug log)
     parkingMinMinutes: 10,
     mqttHost:          "customer.streaming-cardata.bmwgroup.com",
     mqttPort:          9000,
@@ -82,7 +82,7 @@ Module.register("MMM-BMWCarDataInfo", {
       clientId:          this.config.clientId,
       vin:               this.config.vin,
       locale,
-      trackHours:        this.config.trackHours,
+      debugLocations:    this.config.debugLocations,
       parkingMinMinutes: this.config.parkingMinMinutes,
       mqttHost:          this.config.mqttHost,
       mqttPort:          this.config.mqttPort,
