@@ -49,4 +49,12 @@ if (fs.existsSync(hotlineSrc)) {
   console.warn("  WARNING: leaflet-hotline not found in node_modules (install with --include=dev)");
 }
 
+// json-logic-js browser build
+const jlSrc = path.join(nodeModules, "json-logic-js", "logic.js");
+if (fs.existsSync(jlSrc)) {
+  copyFile(jlSrc, path.join(root, "MMM-BMWCarDataInfo", "vendor", "json-logic.js"));
+} else {
+  console.warn("  WARNING: json-logic-js not found in node_modules");
+}
+
 console.log("[postinstall] Done.");

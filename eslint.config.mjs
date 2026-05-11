@@ -31,10 +31,11 @@ export default [
       sourceType:  "script",
       globals: {
         ...globals.browser,
-        Module: "readonly",
-        Log:    "readonly",
-        config: "readonly",
-        L:      "readonly",
+        Module:     "readonly",
+        Log:        "readonly",
+        config:     "readonly",
+        L:          "readonly",
+        jsonLogic:  "readonly",
       },
     },
   },
@@ -55,6 +56,6 @@ export default [
   },
 
   {
-    ignores: ["node_modules/", "MMM-BMWCarDataMap/vendor/"],
+    ignores: ["node_modules/", "MMM-BMWCarDataInfo/vendor/", "MMM-BMWCarDataMap/vendor/"],
   },
 ];

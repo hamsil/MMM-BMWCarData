@@ -34,6 +34,10 @@ Module.register("MMM-BMWCarDataInfo", {
     // span   – number of columns this entry occupies (default 1)
     // When topics is null/empty the module shows nothing (no default list).
     topics: null,
+    // Override or add translations without editing the translation files.
+    // Keys follow the same naming as translations/*.json (e.g. "WAITING",
+    // or "topic.vehicle.isMoving.true").
+    customTranslations: {},
   },
 
   getStyles() {
@@ -93,12 +97,13 @@ Module.register("MMM-BMWCarDataInfo", {
   _normaliseTopics(raw) {
     if (!raw || !Array.isArray(raw) || raw.length === 0) return null;
     return raw.map((entry) => {
-      if (typeof entry === "string") return { path: entry, label: null, format: null, span: 1 };
+      if (typeof entry === "string") return { path: entry, label: null, format: null, span: 1, showWhen: null };
       return {
-        path:   entry.path,
-        label:  entry.label  ?? null,
-        format: entry.format ?? null,
-        span:   Math.max(1, Math.min(6, entry.span ?? 1)),
+        path:     entry.path,
+        label:    entry.label    ?? null,
+        format:   entry.format   ?? null,
+        span:     Math.max(1, Math.min(6, entry.span ?? 1)),
+        showWhen: entry.showWhen ?? null,
       };
     });
   },
@@ -117,7 +122,7 @@ Module.register("MMM-BMWCarDataInfo", {
     if (!this.state) {
       const p = document.createElement("p");
       p.className = "bmw-waiting small dimmed";
-      p.textContent = this.translate("WAITING");
+      p.textContent = this.customTranslate("WAITING");
       wrapper.appendChild(p);
       return wrapper;
     }
@@ -127,7 +132,7 @@ Module.register("MMM-BMWCarDataInfo", {
     } else {
       const p = document.createElement("p");
       p.className = "bmw-waiting small dimmed";
-      p.textContent = this.translate("NO_TOPICS");
+      p.textContent = this.customTranslate("NO_TOPICS");
       wrapper.appendChild(p);
     }
 
@@ -152,39 +157,39 @@ Module.register("MMM-BMWCarDataInfo", {
     }
     table.appendChild(colgroup);
 
-    let tr     = null;
-    let colPos = 0;
-
-    const closeRow = () => {
-      if (colPos < cols) {
-        const filler = document.createElement("td");
-        filler.colSpan = cols - colPos;
-        tr.appendChild(filler);
-      }
-      table.appendChild(tr);
-      tr = null;
-      colPos = 0;
-    };
+    const grid = { tr: null, colPos: 0 };
 
     for (const topic of this._topics) {
+      if (!this._evalShowWhen(topic.showWhen)) continue;
       const span = Math.max(1, Math.min(cols, topic.span ?? 1));
 
-      if (tr !== null && colPos + span > cols) closeRow();
+      if (grid.tr !== null && grid.colPos + span > cols) this._closeGridRow(grid, cols, table);
 
-      if (tr === null) tr = document.createElement("tr");
+      if (grid.tr === null) grid.tr = document.createElement("tr");
 
       const td = this._topicCell(topic, rawTopics, formatValue, labelFromPath);
       if (span > 1) td.colSpan = span;
-      if (colPos > 0) td.classList.add("bmw-topic-cell--sep");
-      tr.appendChild(td);
-      colPos += span;
+      if (grid.colPos > 0) td.classList.add("bmw-topic-cell--sep");
+      grid.tr.appendChild(td);
+      grid.colPos += span;
 
-      if (colPos === cols) closeRow();
+      if (grid.colPos === cols) this._closeGridRow(grid, cols, table);
     }
 
-    if (tr !== null) closeRow();
+    if (grid.tr !== null) this._closeGridRow(grid, cols, table);
 
     return table;
+  },
+
+  _closeGridRow(grid, cols, table) {
+    if (grid.colPos < cols) {
+      const filler = document.createElement("td");
+      filler.colSpan = cols - grid.colPos;
+      grid.tr.appendChild(filler);
+    }
+    table.appendChild(grid.tr);
+    grid.tr    = null;
+    grid.colPos = 0;
   },
 
   _topicCell(topicDef, rawTopics, formatValue, labelFromPath) {
@@ -222,7 +227,7 @@ Module.register("MMM-BMWCarDataInfo", {
     const overrides    = format ? { format } : null;
     const displayValue = rawValue == null
       ? "—"
-      : formatValue(path, rawValue, this.config.locale, overrides, (key) => this.translate(key));
+      : formatValue(path, rawValue, this.config.locale, overrides, (key) => this.customTranslate(key));
 
     const labelEl = document.createElement("span");
     labelEl.className = "bmw-topic-label dimmed small";
@@ -235,6 +240,23 @@ Module.register("MMM-BMWCarDataInfo", {
     td.appendChild(labelEl);
     td.appendChild(valueEl);
     return td;
+  },
+
+  // Translate a key: config.customTranslations takes priority over the
+  // standard translation files, which fall back to English automatically.
+  customTranslate(key) {
+    const custom = this.config.customTranslations?.[key];
+    return custom == null ? this.customTranslate(key) : custom;
+  },
+
+  _evalShowWhen(showWhen) {
+    if (!showWhen) return true;
+    if (typeof jsonLogic === "undefined") return true;  // script not yet loaded → show
+    const data = {};
+    for (const [k, v] of Object.entries(this.state?.rawTopics ?? {})) {
+      data[k] = v.lastValue ?? null;
+    }
+    return Boolean(jsonLogic.apply(showWhen, data));
   },
 
   _getFormatter() {
@@ -263,7 +285,10 @@ Module.register("MMM-BMWCarDataInfo", {
   },
 
   getScripts() {
-    return [this.file("lib/topicFormatter.js")];
+    return [
+      this.file("vendor/json-logic.js"),
+      this.file("lib/topicFormatter.js"),
+    ];
   },
 
   suspend() {},

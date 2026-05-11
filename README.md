@@ -13,20 +13,28 @@ A [MagicMirror²](https://magicmirror.builders/) module pack that connects to th
 
 ## Features
 
+### Info panel (MMM-BMWCarDataInfo)
 - **Live MQTT stream** — no polling, instant updates for every value your car sends
-- **Dynamic topic display** — configure any of the 200+ CarData descriptors; auto-formatting detects units (bar, °C, km/h, %, km, kW, …) from the path name
-- **Topic discovery** — all received descriptor paths are logged to `data/discovered-topics-{vin}.json` so you can browse what your car actually sends
-- **Multi-car support** — add the modules twice with different VINs; each car gets its own MQTT connection and state file
-- **Speed-coloured track**: configurable, e.g. green ≤ 180 km/h · orange 180–200 km/h · red > 200 km/h
-- **Kalman filter** (2D constant-velocity) removes GPS jitter server-side; Catmull-Rom splines for visual smoothness
-- **Charging stops**: icon · arrival/departure · initial→final SoC · kWh charged
-- **Parking stops**: icon · arrival/departure · reverse-geocoded address
-- **Reverse geocoding** via Nominatim (OSM) — no API key required
-- **BEV / ICE / PHEV** drivetrain auto-detected from received signals
-- **Tile proxy** — map tiles fetched server-side, avoiding Electron/CSP restrictions
-- **Token refresh** fully automatic (OAuth2 refresh_token, ~1 h cycle)
-- **Persists** 24 h track + stop history across restarts
-- Configurable number of display columns (1–6), with per-topic `span` for multi-column cells
+- **Any CarData descriptor** — configure any of the 200+ descriptor paths; units (bar, °C, km/h, %, km, kW, …) are auto-detected from the path name
+- **Topic discovery** — every received descriptor path is recorded in `data/discovered-topics-{vin}.json` with its last value, type, and receive count — the starting point for building your `topics` list
+- **Conditional display** — show topics only when a condition is met (e.g. charging info only while charging) using [JsonLogic](https://jsonlogic.com/) expressions in `showWhen`
+- **Translations** — enum and boolean values are looked up in `translations/*.json` by key `topic.<full-path>.<VALUE>`; override individual strings per-instance via `customTranslations` in your config
+- **Flexible grid** — 1–6 display columns, per-topic `span` for wide cells (e.g. address across the full width)
+- **Multi-car support** — add the module more than once with different VINs of the same or different BMW accounts
+
+### Map (MMM-BMWCarDataMap)
+- **GPS track** — up to configurable number of hours of history; smoothed tracks for efficient rendering
+- **Speed-coloured hotline** — configurable gradient, e.g. blue (city) → green (country road) → orange → red (Autobahn)
+- **Charging stops** — icon on the map, popup with arrival/departure time, initial→final SoC, and kWh charged
+- **Parking stops** — icon on the map, popup with arrival/departure time and reverse-geocoded address
+- **Multi-car map** — add the module more than once - one map can show the position and track of one or more cars
+
+### Shared
+- **BMW and MINI** support (see Requirements below for details)
+- **Reverse geocoding** via Nominatim (OSM) — no API key required; throttled and LRU-cached
+- **Tile proxy** — map tiles fetched server-side, avoiding Electron/CSP restrictions; supports CartoDB Dark Matter, CartoDB Positron, and OpenStreetMap out of the box
+- **OAuth2 device-code flow with PKCE** — one `node tools/login.js` per BMW account; tokens refresh automatically every ~1 h
+- **State persistence** — position, tracks and topic values survive a MagicMirror restart
 
 ## Requirements
 
@@ -138,13 +146,52 @@ Each entry is either a plain topic path **or** an object with optional `label`, 
 
     // span: occupy 2 columns (useful for long text like addresses)
     { path: "vehicle.location.address", label: "Location", span: 2 },
+
+    // showWhen: only display while charging
+    { path: "vehicle.drivetrain.electricEngine.charging.power",
+      label: "Charging",
+      showWhen: { "==": [{ "var": "vehicle.drivetrain.electricEngine.charging.status" }, "CHARGINGACTIVE"] } },
   ]
 }
 ```
 
+#### Conditional display (`showWhen`)
+
+Add `showWhen` to any topic entry to show it only when a vehicle condition is met.
+Variables are **full BMW topic paths** — the same paths you use in the `topics` list.
+The syntax follows [JsonLogic](https://jsonlogic.com/).
+
+```js
+// Show only while charging
+showWhen: { "==": [{ "var": "vehicle.drivetrain.electricEngine.charging.status" }, "CHARGINGACTIVE"] }
+
+// Show only while not moving
+showWhen: { "==": [{ "var": "vehicle.isMoving" }, false] }
+
+// Show while charging OR while stopped (OR)
+showWhen: { "or": [
+  { "==": [{ "var": "vehicle.drivetrain.electricEngine.charging.status" }, "CHARGINGACTIVE"] },
+  { "==": [{ "var": "vehicle.isMoving" }, false] },
+] }
+```
+
+**Operator quick reference:**
+
+| Operator | Meaning |
+|---|---|
+| `"=="` / `"!="` | equal / not equal |
+| `"<"` / `"<="` | less than / less than or equal |
+| `">"` / `">="` | greater than / greater than or equal |
+| `"!"` | logical NOT |
+| `"and"` | all conditions must be true |
+| `"or"` | at least one condition must be true |
+
+> If the referenced topic path has never been received from MQTT, the condition
+> evaluates to `false` and the topic is hidden until data arrives.
+
 #### Auto-formatting
 
-The module infers format from the path — no formatter needed per topic:
+The module infers format from the path and the values — no formatter needed per topic:
 
 | Path contains | Displayed as |
 |---|---|
@@ -157,9 +204,12 @@ The module infers format from the path — no formatter needed per topic:
 | `maxEnergy` | kWh |
 | `consumption`, `recuperation` | kWh/100 km |
 | `litres`, `liters` | l |
-| `isXxx`, `locked`, `plugged`, `moving` | Yes / No |
-| `charging.status`, `portStatus`, `status`, `state` | Translation lookup via key `topic.<full-path>.<VALUE>` in the active locale (falls back to English, then raw value). See `MMM-BMWCarDataInfo/translations` |
-| Timestamp strings | Local date + time |
+
+| Value contains | Displayed as |
+|---|---|
+| `true`, `false`  | Translation lookup via key `topic.<full-path>.true` / `topic.<full-path>.false` in the active locale (falls back to English, then raw "Yes" / "No"). See `MMM-BMWCarDataInfo/translations`  |
+| only uppercase characters | Translation lookup via key `topic.<full-path>.<VALUE>` in the active locale (falls back to English, then raw value). See `MMM-BMWCarDataInfo/translations` |
+| Timestamp string | Local date + time |
 
 #### Format Override
 
@@ -267,6 +317,7 @@ Run `node tools/login.js` **once per BMW account** — tokens are per account, n
 | `vin` | `""` | **Required.** Vehicle VIN |
 | `topics` | `null` | **Highly recommended.** Array of topic paths to display. Each entry: plain path string, or `{ path, label?, format?, span? }` (see above). If omitted the module shows a "No topics configured" message. |
 | `columns` | `4` | Number of display columns (1–6) |
+| `customTranslations` | `{}` | Override any translation key without editing the translation files. Keys follow the same format as `translations/en.json`. Example: `{ "topic.vehicle.isMoving.true": "Moving", "topic.vehicle.isMoving.false": "Parked" }` |
 | `debugLocations` | `false` | Set to `true` to write `data/locations-{vin}.log` — a raw GPS coordinate log useful for debugging the track. The file is deleted at midnight (detected on first location arrival after midnight) and on startup if it is from a previous day. |
 | `parkingMinMinutes` | `10` | Min stationary minutes to register a parking stop |
 | `mqttHost` | `customer.streaming-cardata.bmwgroup.com` |  MQTT host (from portal streaming credentials) |
