@@ -315,7 +315,7 @@ Run `node tools/login.js` **once per BMW account** — tokens are per account, n
 |---|---|---|
 | `clientId` | `""` | **Required.** BMW CarData OAuth Client ID (portal) |
 | `vin` | `""` | **Required.** Vehicle VIN |
-| `topics` | `null` | **Highly recommended.** Array of topic paths to display. Each entry: plain path string, or `{ path, label?, format?, span? }` (see above). If omitted the module shows a "No topics configured" message. |
+| `topics` | `null` | **Highly recommended.** Array of topic paths to display. Each entry: plain path string, or `{ path, label?, format?, span?, showWhen? }` (see above). If omitted the module shows a "No topics configured" message. |
 | `columns` | `4` | Number of display columns (1–6) |
 | `customTranslations` | `{}` | Override any translation key without editing the translation files. Keys follow the same format as `translations/en.json`. Example: `{ "topic.vehicle.isMoving.true": "Moving", "topic.vehicle.isMoving.false": "Parked" }` |
 | `debugLocations` | `false` | Set to `true` to write `data/locations-{vin}.log` — a raw GPS coordinate log useful for debugging the track. The file is deleted at midnight (detected on first location arrival after midnight) and on startup if it is from a previous day. |
