@@ -249,14 +249,27 @@ Module.register("MMM-BMWCarDataInfo", {
     return custom == null ? this.translate(key) : custom;
   },
 
+  _getJsonLogic() {
+    // Prefer the browser global set by vendor/json-logic.js.
+    if (typeof jsonLogic !== "undefined") return jsonLogic;
+    // In Electron with nodeIntegration the vendor script sets module.exports
+    // instead of window.jsonLogic.  require() reaches it directly.
+    try {
+      // eslint-disable-next-line no-undef
+      if (typeof require !== "undefined") return require("json-logic-js");
+    } catch { /* not available in this environment */ }
+    return null;
+  },
+
   _evalShowWhen(showWhen) {
     if (!showWhen) return true;
-    if (typeof jsonLogic === "undefined") return true;  // script not yet loaded → show
+    const jl = this._getJsonLogic();
+    if (!jl) return true;
     const data = {};
     for (const [k, v] of Object.entries(this.state?.rawTopics ?? {})) {
       data[k] = v.lastValue ?? null;
     }
-    return Boolean(jsonLogic.apply(showWhen, data));
+    return Boolean(jl.apply(showWhen, data));
   },
 
   _getFormatter() {
