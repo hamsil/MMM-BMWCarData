@@ -7,5 +7,7 @@
   "topic.vehicle.drivetrain.electricEngine.charging.status.INITIALIZATION":       "Initialization",
   "topic.vehicle.drivetrain.electricEngine.charging.status.CHARGINGPAUSED":       "Paused",
   "topic.vehicle.drivetrain.electricEngine.charging.status.CHARGINGENDED":        "Ended",
-  "topic.vehicle.drivetrain.electricEngine.charging.status.CHARGINGERROR":        "Error"
+  "topic.vehicle.drivetrain.electricEngine.charging.status.CHARGINGERROR":        "Error",
+  "topic.vehicle.isMoving.true":                                                  "Moving",
+  "topic.vehicle.isMoving.false":                                                 "Stopped"
 }

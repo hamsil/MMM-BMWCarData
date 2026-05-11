@@ -18,10 +18,10 @@
  *   "{v:.0f} km"       →  42850 → "42850 km"
  */
 
-// Rules checked in order.  Each entry has:
-//   test   – RegExp matched against the last 3 path segments joined with "."
-//   format – format string for numeric values (see grammar above)
-//   fmt    – 'boolean' | 'timestamp' | 'enum'  (for non-numeric types)
+// Path-based rules for numeric formatting only.
+// Boolean, enum, and timestamp detection is value-based (see autoFormat).
+// Each entry: test – RegExp matched against the last 3 path segments joined with "."
+//             format – format string (see grammar above)
 const RULES = [
   // Tyre pressure: raw kPa → bar
   { test: /[Pp]ressure[Tt]arget/,                                     format: "{v/100:.1f} bar" },
@@ -37,8 +37,8 @@ const RULES = [
   { test: /[Mm]ax[Ee]nergy/,                                          format: "{v:.1f} kWh" },
   { test: /[Cc]onsumption/,                                           format: "{v:.1f} kWh/100km" },
   { test: /[Rr]ecuperation/,                                          format: "{v:.1f} kWh/100km" },
-  { test: /[Cc]harging.[Pp]ower/,                                      format: "{v/1000:.0f} kW" },
-  
+  { test: /[Cc]harging.[Pp]ower/,                                     format: "{v/1000:.0f} kW" },
+
   // State of charge / battery level (%, must come before generic "range")
   { test: /[Ss]tate[Oo]f[Cc]harge|header$|hvSoc|[Bb]attery[Ll]evel/, format: "{v:.0f} %" },
   { test: /(?:[Ff]uel[Ll]evel.*[Pp]ercentage|fuelLevel$)/,            format: "{v:.0f} %" },
@@ -48,18 +48,6 @@ const RULES = [
 
   // Litres
   { test: /[Ll]itres|[Ll]iters|[Ff]uelLevel\.litre/,                  format: "{v:.1f} l" },
-
-  // Boolean indicators (isXxx, locked, open, plugged, moving)
-  { test: /(?:[Ll]ocked|[Pp]lugged|[Mm]oving)/,              fmt: "boolean" },
-
-  // Timestamps / time
-  { test: /[Tt]ime$|[Ee]nd\.[Tt]ime|[Ss]tart[Tt]ime/,       fmt: "timestamp" },
-
-  // Charging status and other enum/status fields:
-  // looked up as  topic.<full-path>.<VALUE>  in the active translation file (en fallback).
-  // Raw enum value is shown unchanged when no translation is found.
-  { test: /[Cc]harging\.[Ss]tatus/,                                    fmt: "enum" },
-  { test: /[Ss]tatus$|[Ss]tate$|[Pp]ort[Ss]tatus/,                    fmt: "enum" },
 ];
 
 // Recursive-descent arithmetic evaluator for format expressions.
@@ -166,26 +154,27 @@ function formatValue(topicPath, value, locale = "en-US", overrides = null, trans
     _ruleCache.set(topicPath, rule);
   }
 
-  if (rule) return applyRule(rule, value, locale, translate, topicPath);
-  return autoFormat(value, locale);
+  if (rule) return applyRule(rule, value);
+  return autoFormat(value, locale, translate, topicPath);
 }
 
-function applyRule(rule, rawValue, locale, translate, topicPath) {
-  if (rule.fmt === "boolean")   return formatBoolean(rawValue);
-  if (rule.fmt === "timestamp") return formatTimestamp(rawValue, locale);
-  if (rule.fmt === "enum") {
-    if (translate) {
-      const key = `topic.${topicPath}.${String(rawValue)}`;
-      const t = translate(key);
-      if (t !== key) return t;
-    }
-    return String(rawValue);
-  }
+function applyRule(rule, rawValue) {
   return applyFormat(rule.format, rawValue);
 }
 
-function autoFormat(value, locale) {
-  if (typeof value === "boolean") return formatBoolean(value);
+// Shared translation lookup for enum strings and booleans.
+// Returns the translated string, or null if no translation is registered.
+function _translateEnum(value, translate, topicPath) {
+  if (translate && topicPath) {
+    const key = `topic.${topicPath}.${value}`;
+    const t = translate(key);
+    if (t !== key) return t;
+  }
+  return null;
+}
+
+function autoFormat(value, locale, translate, topicPath) {
+  if (typeof value === "boolean") return formatBoolean(value, translate, topicPath);
 
   if (typeof value === "number") {
     if (!Number.isFinite(value)) return "—";
@@ -195,8 +184,12 @@ function autoFormat(value, locale) {
   }
 
   if (typeof value === "string") {
-    // ISO timestamp?
     if (/^\d{4}-\d{2}-\d{2}T/.test(value)) return formatTimestamp(value, locale);
+    // ALL_CAPS_WITH_UNDERSCORES → translation lookup (enum values like CHARGINGACTIVE)
+    if (/^[A-Z][A-Z0-9_]*$/.test(value)) {
+      const t = _translateEnum(value, translate, topicPath);
+      if (t !== null) return t;
+    }
     return value;
   }
 
@@ -204,9 +197,9 @@ function autoFormat(value, locale) {
   return String(value);
 }
 
-function formatBoolean(v) {
+function formatBoolean(v, translate, topicPath) {
   const b = v === true || v === "true" || v === 1 || v === "1";
-  return b ? "Yes" : "No";
+  return _translateEnum(b ? "true" : "false", translate, topicPath) ?? (b ? "Yes" : "No");
 }
 
 function formatTimestamp(v, locale) {

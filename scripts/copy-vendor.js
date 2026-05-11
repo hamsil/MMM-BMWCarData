@@ -1,8 +1,8 @@
 #!/usr/bin/env node
 "use strict";
 
-const fs = require("fs");
-const path = require("path");
+const fs   = require("node:fs");
+const path = require("node:path");
 
 const root = path.join(__dirname, "..");
 const vendorDir = path.join(root, "MMM-BMWCarDataMap", "vendor");
@@ -47,6 +47,22 @@ if (fs.existsSync(hotlineSrc)) {
   }
 } else {
   console.warn("  WARNING: leaflet-hotline not found in node_modules (install with --include=dev)");
+}
+
+// json-logic-js browser build — append a globalThis fallback so jsonLogic is
+// available even in Electron renderers where nodeIntegration causes the library
+// to take the CommonJS path (module.exports) instead of setting window.jsonLogic.
+const jlSrc  = path.join(nodeModules, "json-logic-js", "logic.js");
+const jlDest = path.join(root, "MMM-BMWCarDataInfo", "vendor", "json-logic.js");
+if (fs.existsSync(jlSrc)) {
+  const content = fs.readFileSync(jlSrc, "utf8") +
+    "\nif (typeof globalThis.jsonLogic === 'undefined' && typeof module !== 'undefined') {\n" +
+    "  globalThis.jsonLogic = module.exports;\n}\n";
+  fs.mkdirSync(path.dirname(jlDest), { recursive: true });
+  fs.writeFileSync(jlDest, content);
+  console.log(`  written ${path.relative(root, jlDest)} (+ Electron globalThis fallback)`);
+} else {
+  console.warn("  WARNING: json-logic-js not found in node_modules");
 }
 
 console.log("[postinstall] Done.");
