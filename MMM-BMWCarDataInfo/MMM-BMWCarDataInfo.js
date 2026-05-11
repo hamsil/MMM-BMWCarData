@@ -246,7 +246,7 @@ Module.register("MMM-BMWCarDataInfo", {
   // standard translation files, which fall back to English automatically.
   customTranslate(key) {
     const custom = this.config.customTranslations?.[key];
-    return custom == null ? this.customTranslate(key) : custom;
+    return custom == null ? this.translate(key) : custom;
   },
 
   _evalShowWhen(showWhen) {
