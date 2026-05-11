@@ -37,9 +37,8 @@ const RULES = [
   { test: /[Mm]ax[Ee]nergy/,                                          format: "{v:.1f} kWh" },
   { test: /[Cc]onsumption/,                                           format: "{v:.1f} kWh/100km" },
   { test: /[Rr]ecuperation/,                                          format: "{v:.1f} kWh/100km" },
-  { test: /[Cc]harging[Pp]ower/,                                      format: "{v:.1f} kW" },
-  { test: /[Pp]ower/,                                                 format: "{v:.1f} kW" },
-
+  { test: /[Cc]harging.[Pp]ower/,                                      format: "{v/1000:.0f} kW" },
+  
   // State of charge / battery level (%, must come before generic "range")
   { test: /[Ss]tate[Oo]f[Cc]harge|header$|hvSoc|[Bb]attery[Ll]evel/, format: "{v:.0f} %" },
   { test: /(?:[Ff]uel[Ll]evel.*[Pp]ercentage|fuelLevel$)/,            format: "{v:.0f} %" },
@@ -56,8 +55,11 @@ const RULES = [
   // Timestamps / time
   { test: /[Tt]ime$|[Ee]nd\.[Tt]ime|[Ss]tart[Tt]ime/,       fmt: "timestamp" },
 
-  // Enum / status strings – UPPERCASE_WITH_UNDERSCORES → Title Case
-  { test: /[Ss]tatus$|[Ss]tate$|[Cc]harging\.[Ss]tatus|[Pp]ort[Ss]tatus/, fmt: "enum" },
+  // Charging status and other enum/status fields:
+  // looked up as  topic.<full-path>.<VALUE>  in the active translation file (en fallback).
+  // Raw enum value is shown unchanged when no translation is found.
+  { test: /[Cc]harging\.[Ss]tatus/,                                    fmt: "enum" },
+  { test: /[Ss]tatus$|[Ss]tate$|[Pp]ort[Ss]tatus/,                    fmt: "enum" },
 ];
 
 // Recursive-descent arithmetic evaluator for format expressions.
@@ -151,7 +153,7 @@ const _ruleCache = new Map();
  * @param {object} [overrides] Optional per-topic override: { format: "{v/100:.1f} bar" }
  * @returns {string}          Human-readable string
  */
-function formatValue(topicPath, value, locale = "en-US", overrides = null) {
+function formatValue(topicPath, value, locale = "en-US", overrides = null, translate = null) {
   if (value === null || value === undefined) return "—";
 
   if (overrides?.format != null) return applyFormat(overrides.format, value);
@@ -164,14 +166,21 @@ function formatValue(topicPath, value, locale = "en-US", overrides = null) {
     _ruleCache.set(topicPath, rule);
   }
 
-  if (rule) return applyRule(rule, value, locale);
+  if (rule) return applyRule(rule, value, locale, translate, topicPath);
   return autoFormat(value, locale);
 }
 
-function applyRule(rule, rawValue, locale) {
+function applyRule(rule, rawValue, locale, translate, topicPath) {
   if (rule.fmt === "boolean")   return formatBoolean(rawValue);
   if (rule.fmt === "timestamp") return formatTimestamp(rawValue, locale);
-  if (rule.fmt === "enum")      return formatEnum(rawValue);
+  if (rule.fmt === "enum") {
+    if (translate) {
+      const key = `topic.${topicPath}.${String(rawValue)}`;
+      const t = translate(key);
+      if (t !== key) return t;
+    }
+    return String(rawValue);
+  }
   return applyFormat(rule.format, rawValue);
 }
 
@@ -188,8 +197,6 @@ function autoFormat(value, locale) {
   if (typeof value === "string") {
     // ISO timestamp?
     if (/^\d{4}-\d{2}-\d{2}T/.test(value)) return formatTimestamp(value, locale);
-    // ALL_CAPS enum?
-    if (/^[A-Z][A-Z0-9_]+$/.test(value)) return formatEnum(value);
     return value;
   }
 
@@ -200,15 +207,6 @@ function autoFormat(value, locale) {
 function formatBoolean(v) {
   const b = v === true || v === "true" || v === 1 || v === "1";
   return b ? "Yes" : "No";
-}
-
-function formatEnum(v) {
-  // CHARGINGACTIVE → "Charging Active",  NOCHARGING → "No Charging"
-  return String(v)
-    .replaceAll("_", " ")
-    .replaceAll(/([a-z])([A-Z])/g, "$1 $2")
-    .toLowerCase()
-    .replaceAll(/\b\w/g, (c) => c.toUpperCase());
 }
 
 function formatTimestamp(v, locale) {

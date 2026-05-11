@@ -10,6 +10,7 @@ Module.register("MMM-BMWCarDataInfo", {
     clientId:          "",
     vin:               "",
     columns:           4,         // columns in the topic grid (1–6)
+    debugLocations:    false,     // set true to write data/locations-{vin}.log (GPS debug log)
     parkingMinMinutes: 10,
     mqttHost:          "customer.streaming-cardata.bmwgroup.com",
     mqttPort:          9000,
@@ -81,6 +82,7 @@ Module.register("MMM-BMWCarDataInfo", {
       clientId:          this.config.clientId,
       vin:               this.config.vin,
       locale,
+      debugLocations:    this.config.debugLocations,
       parkingMinMinutes: this.config.parkingMinMinutes,
       mqttHost:          this.config.mqttHost,
       mqttPort:          this.config.mqttPort,
@@ -220,7 +222,7 @@ Module.register("MMM-BMWCarDataInfo", {
     const overrides    = format ? { format } : null;
     const displayValue = rawValue == null
       ? "—"
-      : formatValue(path, rawValue, this.config.locale, overrides);
+      : formatValue(path, rawValue, this.config.locale, overrides, (key) => this.translate(key));
 
     const labelEl = document.createElement("span");
     labelEl.className = "bmw-topic-label dimmed small";

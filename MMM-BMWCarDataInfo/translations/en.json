@@ -1,4 +1,11 @@
 {
   "WAITING":   "Waiting for BMW CarData…",
-  "NO_TOPICS": "No topics configured — add a topics: [] list to your config"
+  "NO_TOPICS": "No topics configured — add a topics: [] list to your config",
+
+  "topic.vehicle.drivetrain.electricEngine.charging.status.CHARGINGACTIVE":       "Active",
+  "topic.vehicle.drivetrain.electricEngine.charging.status.NOCHARGING":           "Not charging",
+  "topic.vehicle.drivetrain.electricEngine.charging.status.INITIALIZATION":       "Initialization",
+  "topic.vehicle.drivetrain.electricEngine.charging.status.CHARGINGPAUSED":       "Paused",
+  "topic.vehicle.drivetrain.electricEngine.charging.status.CHARGINGENDED":        "Ended",
+  "topic.vehicle.drivetrain.electricEngine.charging.status.CHARGINGERROR":        "Error"
 }
