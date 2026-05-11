@@ -265,9 +265,18 @@ Module.register("MMM-BMWCarDataInfo", {
     if (!showWhen) return true;
     const jl = this._getJsonLogic();
     if (!jl) return true;
+    // Build a nested object so json-logic's dot-notation var access works:
+    // { "var": "vehicle.drivetrain.electricEngine.charging.status" }
+    // traverses data.vehicle.drivetrain.electricEngine.charging.status
     const data = {};
     for (const [k, v] of Object.entries(this.state?.rawTopics ?? {})) {
-      data[k] = v.lastValue ?? null;
+      const parts = k.split(".");
+      let node = data;
+      for (let i = 0; i < parts.length - 1; i++) {
+        node[parts[i]] ??= {};
+        node = node[parts[i]];
+      }
+      node[parts.at(-1)] = v.lastValue ?? null;
     }
     return Boolean(jl.apply(showWhen, data));
   },
