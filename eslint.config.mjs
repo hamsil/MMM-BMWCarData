@@ -1,7 +1,8 @@
-import globals from "globals";
-import js      from "@eslint/js";
+import globals        from "globals";
+import js             from "@eslint/js";
+import { defineConfig } from "eslint/config";
 
-export default [
+export default defineConfig([
   js.configs.recommended,
 
   // ── Node.js server-side files (CommonJS) ─────────────────────────────────
@@ -58,4 +59,4 @@ export default [
   {
     ignores: ["node_modules/", "MMM-BMWCarDataInfo/vendor/", "MMM-BMWCarDataMap/vendor/"],
   },
-];
+]);
