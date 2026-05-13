@@ -74,6 +74,16 @@
   font-variant-numeric: tabular-nums;
 }
 
+.bmw-topic-value-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.bmw-topic-value-row .bmw-topic-value {
+  display: inline;
+}
+
 .bmw-vehicle-image {
   display: block;
   width: 100%;

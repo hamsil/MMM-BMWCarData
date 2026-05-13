@@ -20,7 +20,7 @@ A [MagicMirror²](https://magicmirror.builders/) module pack that connects to th
 - **Topic discovery** — every received descriptor path is recorded in `data/discovered-topics-{vin}.json` with its last value, type, and receive count — the starting point for building your `topics` list
 - **Conditional display** — show topics only when a condition is met (e.g. charging info only while charging) using [JsonLogic](https://jsonlogic.com/) expressions in `showWhen`
 - **Translations** — enum and boolean values are looked up in `translations/*.json` by key `topic.<full-path>.<VALUE>`; override individual strings per-instance via `customTranslations` in your config
-- **Flexible grid** — 1–6 display columns, per-topic `span` for wide cells (e.g. address across the full width)
+- **Flexible grid** — 1–6 display columns, per-topic `span` for wide cells (e.g. address across the full width), per-topic Font Awesome `icon`, and `showLabels: false` for a compact icon-only layout
 - **Multi-car support** — add the module more than once with different VINs of the same or different BMW accounts
 
 ### Map (MMM-BMWCarDataMap)
@@ -159,7 +159,7 @@ The configuration of my own MagicMirror² with a MINI and a BMW currently is as 
 
 ### Topics List
 
-Each entry is either a plain topic path **or** an object with optional `label`, `format`, and `span`:
+Each entry is either a plain topic path **or** an object with optional `label`, `format`, `span`, `icon`, and `showWhen`:
 
 ```js
 topics: [
@@ -179,6 +179,10 @@ topics: [
   // span: occupy 2 columns (useful for long text like addresses)
   { path: "vehicle.location.address", label: "Location", span: 2 },
 
+  // icon: Font Awesome icon shown to the left of the value
+  { path: "vehicle.location.address", label: "Location", span: 2,
+    icon: "fa-solid fa-map-location" },
+
   // showWhen: only display while charging
   {
     path: "vehicle.drivetrain.electricEngine.charging.power",
@@ -191,6 +195,35 @@ topics: [
     },
   },
 ];
+```
+
+#### Icons (`icon`) and label-free layout
+
+Add `icon` to any topic entry to show a [Font Awesome](https://fontawesome.com/) icon to the left of the value.
+Font Awesome must be loaded by MagicMirror² (it is included by default in MagicMirror² v2.20+).
+
+```js
+{ path: "vehicle.drivetrain.batteryManagement.header",
+  icon: "fa-solid fa-battery-three-quarters" }
+{ path: "vehicle.location.address", span: 2,
+  icon: "fa-solid fa-map-location" }
+```
+
+Set `showLabels: false` at the module level to hide all labels above values.
+Combined with per-topic icons this replaces the text labels with visual markers and saves vertical space on the mirror:
+
+```js
+config: {
+  showLabels: false,
+  topics: [
+    { path: "vehicle.drivetrain.batteryManagement.header",
+      icon: "fa-solid fa-car-battery" },
+    { path: "vehicle.drivetrain.electricEngine.kombiRemainingElectricRange",
+      icon: "fa-solid fa-charging-station" },
+    { path: "vehicle.location.address", span: 2,
+      icon: "fa-solid fa-map-location" },
+  ]
+}
 ```
 
 #### Conditional display (`showWhen`)
@@ -346,8 +379,9 @@ Run `node tools/login.js` **once per BMW account** — tokens are per account, n
 | ------------------------- | ----------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `clientId`                | `""`                                            | **Required.** BMW CarData OAuth Client ID (portal)                                                                                                                                                                                            |
 | `vin`                     | `""`                                            | **Required.** Vehicle VIN                                                                                                                                                                                                                     |
-| `topics`                  | `null`                                          | **Highly recommended.** Array of topic paths to display. Each entry: plain path string, or `{ path, label?, format?, span?, showWhen? }` (see above). If omitted the module shows a "No topics configured" message.                           |
+| `topics`                  | `null`                                          | **Highly recommended.** Array of topic paths to display. Each entry: plain path string, or `{ path, label?, format?, span?, icon?, showWhen? }` (see above). If omitted the module shows a "No topics configured" message.                    |
 | `columns`                 | `4`                                             | Number of display columns (1–6)                                                                                                                                                                                                               |
+| `showLabels`              | `true`                                          | Set to `false` to hide the labels above values. Useful in combination with `icon` on each topic to save vertical space — icons replace labels as visual identifiers.                                                                          |
 | `customTranslations`      | `{}`                                            | Override any translation key without editing the translation files. Keys follow the same format as `translations/en.json`. Example: `{ "topic.vehicle.isMoving.true": "Moving", "topic.vehicle.isMoving.false": "Parked" }`                   |
 | `debugLocations`          | `false`                                         | Set to `true` to write `data/locations-{vin}.log` — a raw GPS coordinate log useful for debugging the track. The file is deleted at midnight (detected on first location arrival after midnight) and on startup if it is from a previous day. |
 | `parkingMinMinutes`       | `10`                                            | Min stationary minutes to register a parking stop                                                                                                                                                                                             |
