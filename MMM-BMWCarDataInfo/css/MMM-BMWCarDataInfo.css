@@ -75,13 +75,9 @@
 }
 
 .bmw-topic-value-row {
-  display: flex;
+  display: inline-flex;
   align-items: center;
   gap: 6px;
-}
-
-.bmw-topic-value-row .bmw-topic-value {
-  display: inline;
 }
 
 .bmw-vehicle-image {
