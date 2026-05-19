@@ -32,8 +32,11 @@ Module.register("MMM-BMWCarDataInfo", {
     //          Grammar: "{v} unit"  |  "{v/100:.1f} bar"  (v = raw value,
     //          arithmetic on v allowed, :.Nf controls decimal places)
     // span   – number of columns this entry occupies (default 1)
+    // icon   – Font Awesome icon classes, e.g. "fa-solid fa-map-location" (default null)
     // When topics is null/empty the module shows nothing (no default list).
     topics: null,
+    // showLabels – set false to hide labels above values (useful with icons)
+    showLabels: true,
     // Override or add translations without editing the translation files.
     // Keys follow the same naming as translations/*.json (e.g. "WAITING",
     // or "topic.vehicle.isMoving.true").
@@ -73,7 +76,7 @@ Module.register("MMM-BMWCarDataInfo", {
       return;
     }
 
-    // Normalise topics to [{path, label, format, span}] or null
+    // Normalise topics to [{path, label, format, span, icon, showWhen}] or null
     this._topics = this._normaliseTopics(this.config.topics);
 
     // Derive locale: explicit config > MagicMirror global language > "en"
@@ -97,12 +100,13 @@ Module.register("MMM-BMWCarDataInfo", {
   _normaliseTopics(raw) {
     if (!raw || !Array.isArray(raw) || raw.length === 0) return null;
     return raw.map((entry) => {
-      if (typeof entry === "string") return { path: entry, label: null, format: null, span: 1, showWhen: null };
+      if (typeof entry === "string") return { path: entry, label: null, format: null, span: 1, icon: null, showWhen: null };
       return {
         path:     entry.path,
         label:    entry.label    ?? null,
         format:   entry.format   ?? null,
         span:     Math.max(1, Math.min(6, entry.span ?? 1)),
+        icon:     entry.icon     ?? null,
         showWhen: entry.showWhen ?? null,
       };
     });
@@ -193,7 +197,8 @@ Module.register("MMM-BMWCarDataInfo", {
   },
 
   _topicCell(topicDef, rawTopics, formatValue, labelFromPath) {
-    const { path, label, format } = topicDef;
+    const { path, label, format, icon } = topicDef;
+    const showLabels = this.config.showLabels !== false;
 
     const rawEntry = rawTopics[path];
     const rawValue = rawEntry?.lastValue ?? null;
@@ -202,7 +207,7 @@ Module.register("MMM-BMWCarDataInfo", {
     td.className = "bmw-topic-cell";
 
     if (path === "image") {
-      if (label) {
+      if (showLabels && label) {
         const lbl = document.createElement("span");
         lbl.className = "bmw-topic-label dimmed small";
         lbl.textContent = label;
@@ -229,16 +234,34 @@ Module.register("MMM-BMWCarDataInfo", {
       ? "—"
       : formatValue(path, rawValue, this.config.locale, overrides, (key) => this.customTranslate(key));
 
-    const labelEl = document.createElement("span");
-    labelEl.className = "bmw-topic-label dimmed small";
-    labelEl.textContent = displayLabel;
+    if (showLabels) {
+      const labelEl = document.createElement("span");
+      labelEl.className = "bmw-topic-label dimmed small";
+      labelEl.textContent = displayLabel;
+      td.appendChild(labelEl);
+    }
 
-    const valueEl = document.createElement("span");
-    valueEl.className = "bmw-topic-value bright";
-    valueEl.textContent = displayValue;
+    if (icon) {
+      const row = document.createElement("span");
+      row.className = "bmw-topic-value-row";
 
-    td.appendChild(labelEl);
-    td.appendChild(valueEl);
+      const iconEl = document.createElement("i");
+      iconEl.className = `bmw-topic-icon ${icon}`;
+      row.appendChild(iconEl);
+
+      const valueEl = document.createElement("span");
+      valueEl.className = "bmw-topic-value bright";
+      valueEl.textContent = displayValue;
+      row.appendChild(valueEl);
+
+      td.appendChild(row);
+    } else {
+      const valueEl = document.createElement("span");
+      valueEl.className = "bmw-topic-value bright";
+      valueEl.textContent = displayValue;
+      td.appendChild(valueEl);
+    }
+
     return td;
   },
 
