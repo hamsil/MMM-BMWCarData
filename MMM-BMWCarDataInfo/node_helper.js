@@ -751,8 +751,11 @@ module.exports = NodeHelper.create({
       const entry = PROVIDERS[provider];
       if (!entry) { res.status(404).end(); return; }
 
-      const sub = entry.subs[(Number(x) + Number(y)) % entry.subs.length];
-      const url = `${entry.base.replace("%s", sub)}/${z}/${x}/${y}.png`;
+      // Forward the query string (e.g. CARTO's ?key=…) to the upstream server.
+      const sub   = entry.subs[(Number(x) + Number(y)) % entry.subs.length];
+      const qIdx  = req.originalUrl.indexOf("?");
+      const query = qIdx >= 0 ? req.originalUrl.slice(qIdx) : "";
+      const url   = `${entry.base.replace("%s", sub)}/${z}/${x}/${y}.png${query}`;
       https.get(url, { headers: { "User-Agent": "MMM-BMWCarData/1.0" } }, (upstream) => {
         if (upstream.statusCode !== 200) {
           res.status(upstream.statusCode).end();

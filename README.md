@@ -114,6 +114,7 @@ The minimal configuration of both modules for one vehicle is
   module:   "MMM-BMWCarData/MMM-BMWCarDataMap",
   position: "top_center",
   config: {
+    tileApiKey: "your-carto-api-key", // required for the default CARTO tiles, see "Map tile options"
     width: "600px", // optional, but default 100% is too narrow for top_center
   }
 }
@@ -150,6 +151,7 @@ The configuration of my own MagicMirror² with a MINI and a BMW currently is as 
   position: "top_center",
   config: {
     // no vins defined, so the position and tracks of both cars are displayed
+    tileApiKey: "your-carto-api-key",
     width: "600px",
     height: "480px",
     trackHours: 12,
@@ -405,7 +407,7 @@ Run `node tools/login.js` **once per BMW account** — tokens are per account, n
 | `defaultCenter`   | `[51, 10]`                                                                                                | `[lat, lon]` shown before the first GPS fix                                                                                                                                                                                                                                                                                                                                                                                                          |
 | `defaultZoom`     | `20`                                                                                                      | Zoom level used when no track is displayed (`trackHours: 0` or no data yet)                                                                                                                                                                                                                                                                                                                                                                          |
 | `tileUrl`         | CartoDB Dark Matter (via proxy, see below)                                                                | Leaflet tile URL template                                                                                                                                                                                                                                                                                                                                                                                                                            |
-| `tileApiKey`      | `""`                                                                                                      | Optional API key appended as `?api_key=…`                                                                                                                                                                                                                                                                                                                                                                                                            |
+| `tileApiKey`      | `""`                                                                                                      | API key appended as `?key=…` and forwarded upstream by the tile proxy. **Required for the default CARTO tiles** (free, [request here](https://carto.com/basemaps/apikey/)); without it, tiles show an "API KEY REQUIRED" watermark.                                                                                                                                                                                                                              |
 | `tileAttribution` | `"&copy; <a href='https://openstreetmap.org'>OSM</a> &copy; <a href='https://carto.com'>CARTO</a>"`       | Attribution HTML (keep per licence)                                                                                                                                                                                                                                                                                                                                                                                                                  |
 | `tileFilter`      | `"brightness(2.5) contrast(1.2)"`                                                                         | CSS filter applied to tile pane only                                                                                                                                                                                                                                                                                                                                                                                                                 |
 | `debugRaw`        | `false`                                                                                                   | Show faint unsmoothed track overlay                                                                                                                                                                                                                                                                                                                                                                                                                  |
@@ -413,6 +415,11 @@ Run `node tools/login.js` **once per BMW account** — tokens are per account, n
 ## Map tile options
 
 Tiles are fetched server-side and cached 24 h — no CSP/Electron issues.
+
+**CARTO API key:** CARTO basemaps (the default Dark Matter and Positron) now require an API key.
+Request one for free at [carto.com/basemaps/apikey](https://carto.com/basemaps/apikey/) and set it
+as `tileApiKey` in the map module config. Without a valid key, every tile only shows an
+"API KEY REQUIRED" watermark. OpenStreetMap tiles need no key.
 
 | Provider                            | `tileUrl`                                              |
 | ----------------------------------- | ------------------------------------------------------ |

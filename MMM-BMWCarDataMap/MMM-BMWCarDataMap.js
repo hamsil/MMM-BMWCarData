@@ -123,8 +123,10 @@ Module.register("MMM-BMWCarDataMap", {
       keyboard:           false,
     });
 
+    // CARTO expects the key as ?key=…; the tile proxy forwards the query string upstream.
+    const sep     = this.config.tileUrl.includes("?") ? "&" : "?";
     const tileUrl = this.config.tileApiKey
-      ? `${this.config.tileUrl}?api_key=${this.config.tileApiKey}`
+      ? `${this.config.tileUrl}${sep}key=${encodeURIComponent(this.config.tileApiKey)}`
       : this.config.tileUrl;
 
     L.tileLayer(tileUrl, {
