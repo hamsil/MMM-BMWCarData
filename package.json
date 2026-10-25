@@ -1,6 +1,6 @@
 {
   "name": "mmm-bmwcardata",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "MagicMirror² module pack for BMW CarData – info panel + live map via MQTT",
   "type": "commonjs",
   "license": "MIT",
